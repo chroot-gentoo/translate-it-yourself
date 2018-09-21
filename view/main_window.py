@@ -6,6 +6,7 @@ import os
 
 from view.ui_views.mainWindow import Ui_MainWindow
 from view.ui_views.info_boxes import MessageBoxes
+from view.ui_views.create_project_dialog import CreateProjectDialogWindow
 
 from view.translate_api import translate
 
@@ -22,11 +23,13 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     load_from_file = QtCore.pyqtSignal(str)
     set_text_blocks = QtCore.pyqtSignal(tuple)
     dump_to_file = QtCore.pyqtSignal(list, str)
+    new_project = QtCore.pyqtSignal(str, str, str, str)
 
     def __init__(self, paren=None):
         QtWidgets.QMainWindow.__init__(self, paren)
         self.setupUi(self)
         self.info_box = MessageBoxes(self)
+        self.create_project_dialog = CreateProjectDialogWindow(self)
 
         # Таймер автосохранения, по истичению запускает метод _save_project, длительность задает AUTO_SAVE_TIMEOUT
         self.autosave_timer = QtCore.QTimer(self)
@@ -123,23 +126,13 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             text = [self.translatedListWidget.item(i).text() for i in range(self.translatedListWidget.count())]
             self.dump_to_file.emit(text, file[0])
 
+    # TODO: при проверке имени проекта, если такое уже есть (сигнал?) снова запускать эту функцию и окно с ошибкой
     @QtCore.pyqtSlot()
     def create_new_project(self):
-        # имя для нового проекта
-        new_project_name, _create = QtWidgets.QInputDialog.getText(
-            self, 'Новый проект', 'Введите имя для нового проекта'
-        )
-        if _create:
-            if new_project_name:
-                # путь к файлу
-                file_path, _ = QtWidgets.QFileDialog.getOpenFileName(
-                    parent=self, caption='Новый проект', filter='All (*);;TXT (*.txt)', initialFilter='TXT (*.txt)'
-                )
-                if file_path:
-                    self.load_from_file.emit(os.path.abspath(file_path))
-            else:
-                self.info_box('info', 'имя', 'введите имя для проекта')
-                self.create_new_project()
+        """ Запуск диалогового окна создания нового проекта,
+        при нажатии на "Создать" генерируется сигнял new_project с информацией из полей.
+        """
+        self.create_project_dialog.show()
 
     # TODO: выгрузка из базы списка проектов, + поиск по проектам... список/аккардеон/дерево?
     @QtCore.pyqtSlot()
