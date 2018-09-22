@@ -23,13 +23,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     load_from_file = QtCore.pyqtSignal(str)
     set_text_blocks = QtCore.pyqtSignal(tuple)
     dump_to_file = QtCore.pyqtSignal(list, str)
-    new_project = QtCore.pyqtSignal(str, str, str, str)
+    create_project = QtCore.pyqtSignal(str, str, str, str)
 
     def __init__(self, paren=None):
         QtWidgets.QMainWindow.__init__(self, paren)
         self.setupUi(self)
         self.info_box = MessageBoxes(self)
-        self.create_project_dialog = CreateProjectDialogWindow(self)
 
         # Таймер автосохранения, по истичению запускает метод _save_project, длительность задает AUTO_SAVE_TIMEOUT
         self.autosave_timer = QtCore.QTimer(self)
@@ -132,7 +131,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         """ Запуск диалогового окна создания нового проекта,
         при нажатии на "Создать" генерируется сигнял new_project с информацией из полей.
         """
-        self.create_project_dialog.show()
+        create_project_dialog = CreateProjectDialogWindow(self)
+        create_project_dialog.show()
 
     # TODO: выгрузка из базы списка проектов, + поиск по проектам... список/аккардеон/дерево?
     @QtCore.pyqtSlot()
