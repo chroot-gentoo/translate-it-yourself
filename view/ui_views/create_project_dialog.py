@@ -21,7 +21,7 @@ class CreateProjectDialogWindow(QtWidgets.QDialog, Ui_Dialog):
         source_link = self.sourceLinkLineEdit.text()
         file_path = self.filePathLineEdit.text()
         if self.check_fields(project_name, author_name, source_link, file_path):
-            self.parent().new_project.emit(project_name, author_name, source_link, file_path)
+            self.parent().create_project.emit(project_name, author_name, source_link, file_path)
             self.close()
         else:
             self.parent().info_box('info', 'заполните поля', 'заполните нехобходимые поля')
