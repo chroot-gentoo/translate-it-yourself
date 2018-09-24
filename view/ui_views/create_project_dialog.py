@@ -20,8 +20,11 @@ class CreateProjectDialogWindow(QtWidgets.QDialog, Ui_Dialog):
         author_name = self.authorNameLineEdit.text()
         source_link = self.sourceLinkLineEdit.text()
         file_path = self.filePathLineEdit.text()
-        if self.check_fields(project_name, author_name, source_link, file_path):
-            self.parent().create_project.emit(project_name, author_name, source_link, file_path)
+        if self.check_fields(project_name, author_name):
+            self.parent().create_project.emit({
+                'project_name': project_name, 'author_name': author_name, 'source_link': source_link,
+                'file_path': file_path
+            })
             self.close()
         else:
             self.parent().info_box('info', 'заполните поля', 'заполните нехобходимые поля')
@@ -35,19 +38,13 @@ class CreateProjectDialogWindow(QtWidgets.QDialog, Ui_Dialog):
         )
         self.filePathLineEdit.insert(file_path)
 
-    def check_fields(self, proj_name, auth_name, sour_link, file_path):
+    def check_fields(self, proj_name, auth_name):
         not_filled = False
         if not proj_name:
             self.projectNameLabel.setStyleSheet('color: red')
             not_filled = True
         if not auth_name:
             self.authorNameLabel.setStyleSheet('color: red')
-            not_filled = True
-        if not sour_link:
-            self.sourceLinkLabel.setStyleSheet('color: red')
-            not_filled = True
-        if not file_path:
-            self.filePathLabel.setStyleSheet('color: red')
             not_filled = True
 
         if not_filled:
