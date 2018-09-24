@@ -23,7 +23,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     load_from_file = QtCore.pyqtSignal(str)
     set_text_blocks = QtCore.pyqtSignal(tuple)
     dump_to_file = QtCore.pyqtSignal(list, str)
-    create_project = QtCore.pyqtSignal(str, str, str, str)
+    create_project = QtCore.pyqtSignal(dict)
 
     def __init__(self, paren=None):
         QtWidgets.QMainWindow.__init__(self, paren)
