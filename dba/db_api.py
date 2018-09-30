@@ -3,12 +3,12 @@ import sqlite3
 
 class CDataBase:
     def __init__(self):
-        self.conn = sqlite3.connect("tiy.db", isolation_level='auto_commit')
+        self.conn = sqlite3.connect("tiy.db")
         self.cursor = self.conn.cursor()
 
     def create_table_local_projects(self):
         self.cursor.execute('create table if not exists local_projects '
-                            '(prj_id integer unic primary key, prj_name text, '
+                            '(prj_id integer unique primary key, prj_name text, '
                             'author text, link_original text)')
         self.conn.commit()
 
@@ -68,3 +68,7 @@ class CDataBase:
     def get_full_ru(self, prj_id):
         self.cursor.execute('select ru_text from book_ru where prj_id = :prj_id', prj_id)
         self.conn.commit()
+
+
+if __name__ == '__main__':
+    pass     # место для тестов.
