@@ -30,12 +30,12 @@ class CDataBase:
         self.conn.commit()
 
     def set_en_text(self, prj_id, block_id, en_text):
-        self.cursor.execute('import into book_en ( prj_id,  block_id,  en_text) '
+        self.cursor.execute('insert into book_en ( prj_id,  block_id,  en_text) '
                             'values (:prj_id, :block_id, :en_text);', (prj_id, block_id, en_text))
         self.conn.commit()
 
     def set_ru_text(self, prj_id, block_id, ru_text):
-        self.cursor.execute('import into book_ru (prj_id, block_id, ru_text) '
+        self.cursor.execute('insert into book_ru (prj_id, block_id, ru_text) '
                             'values (:prj_id, :block_id, :ru_text);', (prj_id, block_id, ru_text))
         self.conn.commit()
 
@@ -48,12 +48,12 @@ class CDataBase:
     def get_few_block_en(self, prj_id, blk_begin, blk_end):
         self.cursor.execute('select en_text from book_en where prj_id = :prj_id '
                             'and block_id >= :blk_begin and block_id <= :blk_end', (prj_id, blk_begin, blk_end))
-        self.conn.commit()
+        return self.cursor.fetchall()
 
     def get_few_block_ru(self, prj_id, blk_begin, blk_end):
         self.cursor.execute('select ru_text from book_ru where prj_id = :prj_id '
                             'and block_id >= :blk_begin and block_id <= :blk_end', (prj_id, blk_begin, blk_end))
-        self.conn.commit()
+        return self.cursor.fetchall()
 
     def update_data_ru(self, ru_text, prj_id, blk_id):
         self.cursor.execute('update book_ru set ru_text = :ru_text '
@@ -67,7 +67,7 @@ class CDataBase:
 
     def get_full_ru(self, prj_id):
         self.cursor.execute('select ru_text from book_ru where prj_id = :prj_id', prj_id)
-        self.conn.commit()
+        return self.cursor.fetchall()
 
 
 if __name__ == '__main__':
