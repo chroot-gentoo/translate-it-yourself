@@ -1,5 +1,6 @@
 import json
 from abc import ABCMeta, abstractmethod
+import conn_db
 
 
 class AbsModel:
@@ -26,7 +27,7 @@ class AbsModel:
         pass
 
     @abstractmethod
-    def set_data(self):
+    def set_data(self, data: tuple):
         pass
 
     def dumpto_file(self):
@@ -51,18 +52,32 @@ class SQLiteRepository(AbsModel):
 
     def __init__(self, file_name, data):
         super().__init__(file_name, data)
+        self.db_ = conn_db.CDataBase()
+        self.project_name = None
 
-    def create_project(self, project_name: str):
-        pass
+    def create_project(self, **kwargs):
+        print(kwargs)
+        self.project_name = kwargs['project_name']
+        self.db_.set_project(prj_name=kwargs['project_name'],
+                             author=kwargs['author_name'],
+                             link_original=kwargs['source_link'])
 
     def open_project(self, project_name: str):
-        pass
+        self.project_name = project_name
+        return self.get_data()
 
     def get_data(self):
-        pass
+        en_ = self.db_.get_few_block_en(self.project_name)
+        ru_ = self.db_.get_few_block_ru(self.project_name)
+        return tuple((en_[i], ru_[i]) for i in en_)
 
-    def set_data(self):
-        pass
+    def set_data(self, data: tuple):
+        print(data)
+        for idx, i in enumerate(data):
+            print('en', i[0])
+            print('ru', i[1])
+            self.db_.set_en_text(prj_name=self.project_name, block_id=idx, en_text=i[0])
+            self.db_.set_ru_text(prj_name=self.project_name, block_id=idx, ru_text=i[1])
 
 
 class TempRepository(AbsModel):
@@ -97,7 +112,7 @@ class TempRepository(AbsModel):
             print('Error (so bad):', e)
 
 
-class Repository(TempRepository):
+class Repository(SQLiteRepository):
 
     __slots__ = ['file_name', 'data']
 
