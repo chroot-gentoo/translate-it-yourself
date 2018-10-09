@@ -11,19 +11,21 @@ class Presenter(object):
         self._view.dump_to_file.connect(self.dumpto_file)
         self._view.open_cur_project.connect(self.open_project)
         self._view.create_project.connect(self.create_project)
+        self._view.get_projects_names.connect(self.get_projects_names)
+
+    def get_projects_names(self):
+        projects_names = self._model.get_projects_names()
+        if projects_names is not None:
+            self._view.open_projects(projects_names)
 
     def create_project(self, dict_):
         self._model.create_project(**dict_)
         self.loadfrom_file(dict_['file_path'])
 
     def get_blocks(self, data: tuple):
-        # data = self._model.get_data()
         self._view.add_text(data)
 
     def set_blocks(self, data):
-        # data_dict = {}
-        # for idx, item in enumerate(data):
-        #     data_dict.update({idx: item})
         self._model.set_data(data)
 
     def dumpto_file(self, data, file_name):
@@ -34,8 +36,7 @@ class Presenter(object):
 
     def loadfrom_file(self, file_name):
         data = ParserText(file_name).get_blocks_dict()
-        print(data)
-        data_tuple = ((data[i], '') for i in data.keys())
+        data_tuple = ((i, '') for i in data)
         self._view.add_text(data_tuple)
 
     def open_project(self, project_name):

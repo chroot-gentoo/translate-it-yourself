@@ -1,4 +1,8 @@
 import sqlite3
+from os.path import abspath, join
+
+DB_PATH = join(abspath('.'), 'tiy.db')
+# DB_PATH = "D:\\Projects\\translate_it_now\\tiy.db"
 
 
 # TODO: все запросы на создание таблиц обернуть в один метот create_base, который должен запускаться в __init__
@@ -7,7 +11,7 @@ import sqlite3
 # TODO: некоторые методы я переписал, чтобы просто опробовать связи, нужно еще раз связываться и уже допиливать
 class CDataBase:
     def __init__(self):
-        self.conn = sqlite3.connect("tiy.db")
+        self.conn = sqlite3.connect(DB_PATH)
         self.cursor = self.conn.cursor()
 
     def create_table_local_projects(self):
@@ -30,23 +34,23 @@ class CDataBase:
 
     def set_project(self, prj_name, author, link_original):
         try:
-            self.cursor.execute(f'select prj_name from local_projects where prj_name = \'{prj_name}\'')
+            self.cursor.execute('select prj_name from local_projects where prj_name = :prj_name',
+                                (prj_name,))
             if self.cursor.fetchone():
                 # TODO: вернуть в обработчик, для повторного запроса и сообщений пользователю
                 print('проект существует')
             else:
-                self.cursor.execute('insert or replace into local_projects (prj_name, author, link_original) '
+                self.cursor.execute('insert into local_projects (prj_name, author, link_original) '
                                     'values (:prj_name, :author, :link_original)', (prj_name, author, link_original))
                 self.conn.commit()
         except Exception as e:
             print(e)
             self.conn.rollback()
 
-    def set_en_text(self, prj_name, block_id, en_text):
+    def set_en_text(self, prj_id, block_id, en_text):
         try:
-            self.cursor.execute(f'select prj_id from local_projects where prj_name = \'{prj_name}\'')
-            prj_id = self.cursor.fetchone()[0]
-            self.cursor.execute(f'select * from book_en where prj_id = \'{prj_id}\' and block_id = \'{block_id}\'')
+            self.cursor.execute('select * from book_en where prj_id = :prj_id and block_id = :block_id',
+                                (prj_id, block_id))
             if self.cursor.fetchone():
                 self.cursor.execute('update book_en set en_text = :en_text '
                                     'where prj_id = :prj_id and block_id = :blk_id', (en_text, prj_id, block_id))
@@ -58,11 +62,10 @@ class CDataBase:
             print(e)
             self.conn.rollback()
 
-    def set_ru_text(self, prj_name, block_id, ru_text):
+    def set_ru_text(self, prj_id, block_id, ru_text):
         try:
-            self.cursor.execute(f'select prj_id from local_projects where prj_name = \'{prj_name}\'')
-            prj_id = self.cursor.fetchone()[0]
-            self.cursor.execute(f'select * from book_ru where prj_id = \'{prj_id}\' and block_id = \'{block_id}\'')
+            self.cursor.execute('select * from book_ru where prj_id = :prj_id and block_id = :block_id',
+                                (prj_id, block_id))
             if self.cursor.fetchone():
                 self.cursor.execute('update book_ru set ru_text = :ru_text '
                                     'where prj_id = :prj_id and block_id = :blk_id', (ru_text, prj_id, block_id))
@@ -77,39 +80,37 @@ class CDataBase:
     def drop_project(self, prj_id):
         self.cursor.execute('delete from local_projects where prj_id = :prj_id; '
                             'delete from book_en where prj_id = :prj_id;'
-                            'delete from book_ru where prj_id = :prj_id;', prj_id)
+                            'delete from book_ru where prj_id = :prj_id;', (prj_id,))
         self.conn.commit()
 
-    def get_few_block_en(self, prj_name, blk_begin=None, blk_end=None):
+    def get_project_id(self, prj_name):
         try:
-            self.cursor.execute(f'select prj_id from local_projects where prj_name = \'{prj_name}\'')
-            prj_id = self.cursor.fetchone()[0]
-            self.cursor.execute(f'select en_text from book_en where prj_id = \'{prj_id}\'')
-
-            if self.cursor.fetchall():
-                return self.cursor.fetchall()
+            self.cursor.execute('select prj_id from local_projects where prj_name = :prj_name', (prj_name,))
+            fetch = tuple(self.cursor.fetchone())
+            if len(fetch) > 0:
+                print('id is', fetch)
+                return fetch[0]
             else:
                 return None
         except Exception as e:
             print(e)
 
-    def get_few_block_ru(self, prj_name, blk_begin=None, blk_end=None):
+    def get_all_block(self, prj_id):
         try:
-            self.cursor.execute(f'select prj_id from local_projects where prj_name = \'{prj_name}\'')
-            prj_id = self.cursor.fetchone()[0]
-            self.cursor.execute(f'select ru_text from book_ru where prj_id = \'{prj_id}\'')
-
-            if self.cursor.fetchall():
-                return self.cursor.fetchall()
+            self.cursor.execute('select en_text, ru_text from book_en '
+                                'left join book_ru on book_en.prj_id = book_ru.prj_id '
+                                'and book_en.block_id = book_ru.block_id '
+                                'where book_en.prj_id = :prj_id', (prj_id,))
+            fetch = tuple(self.cursor.fetchall())
+            if len(fetch) > 0:
+                return fetch
             else:
                 return None
         except Exception as e:
             print(e)
 
-    def update_data_ru(self, ru_text, prj_name, blk_id):
+    def update_data_ru(self, ru_text, prj_id, blk_id):
         try:
-            self.cursor.execute(f'select prj_id from local_projects where prj_name = \'{prj_name}\'')
-            prj_id = self.cursor.fetchone()[0]
             self.cursor.execute('update book_ru set ru_text = :ru_text '
                                 'where prj_id = :prj_id and block_id = :blk_id', (ru_text, prj_id, blk_id))
 
@@ -118,10 +119,8 @@ class CDataBase:
             print(e)
             self.conn.rollback()
 
-    def update_data_en(self, en_text, prj_name, blk_id):
+    def update_data_en(self, en_text, prj_id, blk_id):
         try:
-            self.cursor.execute(f'select prj_id from local_projects where prj_name = \'{prj_name}\'')
-            prj_id = self.cursor.fetchone()[0]
             self.cursor.execute('update book_en set en_text = :en_text '
                                 'where prj_id = :prj_id and block_id = :blk_id', (en_text, prj_id, blk_id))
 
@@ -130,19 +129,33 @@ class CDataBase:
             print(e)
             self.conn.rollback()
 
-    def get_project_names(self):
+    def get_projects_names(self):
         try:
             self.cursor.execute('select prj_name from local_projects')
-            return self.cursor.fetchall()
+            fetch = tuple(self.cursor.fetchall())
+            if len(fetch) > 0:
+                return fetch
+            else:
+                return None
         except Exception as e:
             print(e)
 
     def get_full_ru(self, prj_id):
-        self.cursor.execute('select ru_text from book_ru where prj_id = :prj_id', prj_id)
-        return self.cursor.fetchall()
+        try:
+            self.cursor.execute('select ru_text from book_ru where prj_id = :prj_id', (prj_id,))
+            fetch = tuple(self.cursor.fetchall())
+            if len(fetch) > 0:
+                return fetch
+            else:
+                return None
+        except Exception as e:
+            print(e)
+
+    def close(self):
+        self.conn.close()
 
 
 if __name__ == '__main__':
     a = CDataBase()
-    # a.set_project('python', 'Guido', 'python.org')
-    print(a.get_project_names())
+    print(a.get_projects_names())
+    print(a.get_project_id('python'))
