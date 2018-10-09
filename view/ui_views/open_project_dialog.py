@@ -5,7 +5,6 @@ from view.ui_views.openProjectWindow import Ui_Dialog
 
 class OpenProjectDialogWindow(QtWidgets.QDialog, Ui_Dialog):
     # сигнал будет передавать ?имя? проекта... достаточно ли строки?
-    opent_project_signal = QtCore.pyqtSignal(str)
 
     def __init__(self, parent=None):
         QtWidgets.QDialog.__init__(self, parent)
@@ -18,7 +17,11 @@ class OpenProjectDialogWindow(QtWidgets.QDialog, Ui_Dialog):
         project_item = self.openProjectListWidget.currentItem()
         if project_item:
             project_name = project_item.text()
-            self.opent_project_signal.emit(project_name)
+            self.parent().open_cur_project.emit(project_name)
             self.close()
         else:
             self.parent().info_box('info', 'Не выбран проект', 'Выберите проект')
+
+    def add_projects_list(self, projects):
+        print('im finally here')
+        self.openProjectListWidget.addItems(projects)
