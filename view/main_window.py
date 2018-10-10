@@ -27,7 +27,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     dump_to_file = QtCore.pyqtSignal(list, str)
     create_project = QtCore.pyqtSignal(dict)
     delete_project = QtCore.pyqtSignal(str)
-    get_projects_names = QtCore.pyqtSignal()
+    get_projects_names = QtCore.pyqtSignal(str)  # передаем параметром действие - создание или удаление проекта
 
     def __init__(self, paren=None):
         QtWidgets.QMainWindow.__init__(self, paren)
@@ -136,13 +136,15 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         """ Запуск диалогового окна создания нового проекта,
         при нажатии на "Создать" генерируется сигнял new_project с информацией из полей.
         """
-        create_project_dialog = CreateProjectDialogWindow(self)
-        create_project_dialog.show()
+        if self.close_current_project():
+            create_project_dialog = CreateProjectDialogWindow(self)
+            create_project_dialog.show()
 
     # TODO: полагаю имя проекта передавать надо не сюда, оно предается сингалом
     @QtCore.pyqtSlot()
     def open_project_triggered(self):
-        self.get_projects_names.emit()
+        if self.close_current_project():
+            self.get_projects_names.emit('open')
 
     def open_projects(self, projects):
         print(projects)
@@ -151,7 +153,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         open_project_dialog.show()
 
     def delete_project_triggered(self):
-        self.delete_project.emit()
+        self.get_projects_names.emit('delete')
 
     def delete_projects(self, projects):
         delete_project_dialog = DeleteProjectDialogWindow(self)
@@ -165,20 +167,31 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.align_text_blocks_height()
 
     def closeEvent(self, event):
+        if self.close_current_project():
+            event.accept()
+        else:
+            event.ignore()
+
+    def close_current_project(self):
         if self._project_changed:
-            # диалоговое окно ... подумать где создавать экземпляр
-            answ = self.info_box('question', 'Выход', 'Сохранить изменения?')
+            answ = self.info_box('question', 'Закрытие проекта', 'Сохранить изменения?')
             if answ == QtWidgets.QMessageBox.Cancel:
-                event.ignore()
+                return False
 
             elif answ == QtWidgets.QMessageBox.Yes:
                 self._save_project()
-                event.accept()
+                self.clear_project()
+                return True
 
             elif answ == QtWidgets.QMessageBox.No:
-                event.accept()
-        else:
-            event.accept()
+                self.clear_project()
+                return True
+        self.clear_project()
+        return True
+
+    def clear_project(self):
+        self.originalListWidget.clear()
+        self.translatedListWidget.clear()
 
     def showEvent(self, event):
         self.align_text_blocks_height()

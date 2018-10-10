@@ -2,35 +2,43 @@ import sqlite3
 from os.path import abspath, join
 
 DB_PATH = join(abspath('.'), 'tiy.db')
-# DB_PATH = "D:\\Projects\\translate_it_now\\tiy.db"
 
 
 # TODO: все запросы на создание таблиц обернуть в один метот create_base, который должен запускаться в __init__
-# TODO: все запросы должны быть с ловлей исключений
-# TODO: все методы должны работать только с текстовым именем проекта, если нужен id, он должен получаться отдельным запросом
-# TODO: некоторые методы я переписал, чтобы просто опробовать связи, нужно еще раз связываться и уже допиливать
 class CDataBase:
     def __init__(self):
         self.conn = sqlite3.connect(DB_PATH)
         self.cursor = self.conn.cursor()
 
     def create_table_local_projects(self):
-        self.cursor.execute('create table if not exists local_projects '
-                            '(prj_id integer unique primary key, prj_name text, '
-                            'author text, link_original text)')
-        self.conn.commit()
+        try:
+            self.cursor.execute('create table if not exists local_projects '
+                                '(prj_id integer unique primary key, prj_name text, '
+                                'author text, link_original text)')
+            self.conn.commit()
+        except Exception as e:
+            print(e)
+            self.conn.rollback()
 
     def create_table_book_en(self):
-        self.cursor.execute('create table if not exists book_en'
-                            '(prj_id integer, block_id integer, '
-                            'en_text text, primary key(prj_id, block_id))')
-        self.conn.commit()
+        try:
+            self.cursor.execute('create table if not exists book_en'
+                                '(prj_id integer, block_id integer, '
+                                'en_text text, primary key(prj_id, block_id))')
+            self.conn.commit()
+        except Exception as e:
+            print(e)
+            self.conn.rollback()
 
     def create_table_book_ru(self):
-        self.cursor.execute('create table if not exists book_ru'
-                            '(prj_id integer, block_id integer, '
-                            'ru_text text, primary key(prj_id, block_id))')
-        self.conn.commit()
+        try:
+            self.cursor.execute('create table if not exists book_ru'
+                                '(prj_id integer, block_id integer, '
+                                'ru_text text, primary key(prj_id, block_id))')
+            self.conn.commit()
+        except Exception as e:
+            print(e)
+            self.conn.rollback()
 
     def set_project(self, prj_name, author, link_original):
         try:
@@ -78,10 +86,14 @@ class CDataBase:
             self.conn.rollback()
 
     def drop_project(self, prj_id):
-        self.cursor.execute('delete from local_projects where prj_id = :prj_id; '
-                            'delete from book_en where prj_id = :prj_id;'
-                            'delete from book_ru where prj_id = :prj_id;', (prj_id,))
-        self.conn.commit()
+        try:
+            self.cursor.execute('delete from local_projects where prj_id = :prj_id', (prj_id,))
+            self.cursor.execute('delete from book_en where prj_id = :prj_id', (prj_id,))
+            self.cursor.execute('delete from book_ru where prj_id = :prj_id', (prj_id,))
+            self.conn.commit()
+        except Exception as e:
+            print(e)
+            self.conn.rollback()
 
     def get_project_id(self, prj_name):
         try:
