@@ -95,6 +95,8 @@ class SQLiteRepository(AbsModel):
             self.db_.set_en_text(prj_id=self.project_id, block_id=idx, en_text=i[0])
             self.db_.set_ru_text(prj_id=self.project_id, block_id=idx, ru_text=i[1])
 
+    def del_project(self, project_name):
+        self.db_.drop_project(self.db_.get_project_id(project_name))
 
 class TempRepository(AbsModel):
 

@@ -12,11 +12,15 @@ class Presenter(object):
         self._view.open_cur_project.connect(self.open_project)
         self._view.create_project.connect(self.create_project)
         self._view.get_projects_names.connect(self.get_projects_names)
+        self._view.delete_project.connect(self.del_project)
 
-    def get_projects_names(self):
+    def get_projects_names(self, action):
         projects_names = self._model.get_projects_names()
         if projects_names is not None:
-            self._view.open_projects(projects_names)
+            if action == 'open':
+                self._view.open_projects(projects_names)
+            elif action == 'delete':
+                self._view.delete_projects(projects_names)
 
     def create_project(self, dict_):
         self._model.create_project(**dict_)
@@ -43,4 +47,7 @@ class Presenter(object):
         data = self._model.open_project(project_name)
         if data is not None:
             self.get_blocks(data)
+
+    def del_project(self, project_name):
+        self._model.del_project(project_name)
 
