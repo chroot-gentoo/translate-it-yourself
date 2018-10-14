@@ -1,5 +1,6 @@
 from presenter.parsertxt import ParserText
 
+
 # TODO: в большой степени методы носят тестовый характер. Изменим при реализации базы
 class Presenter(object):
 
@@ -25,6 +26,8 @@ class Presenter(object):
     def create_project(self, dict_):
         self._model.create_project(**dict_)
         self.loadfrom_file(dict_['file_path'])
+        if self._model.get_project_id(dict_['project_name']):
+            self._view.save_project()
 
     def get_blocks(self, data: tuple):
         self._view.add_text(data)
@@ -50,4 +53,3 @@ class Presenter(object):
 
     def del_project(self, project_name):
         self._model.del_project(project_name)
-
