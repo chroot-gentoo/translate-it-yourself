@@ -20,6 +20,7 @@ class CreateProjectDialogWindow(QtWidgets.QDialog, Ui_Dialog):
         author_name = self.authorNameLineEdit.text()
         source_link = self.sourceLinkLineEdit.text()
         file_path = self.filePathLineEdit.text()
+
         if self.check_fields(project_name, author_name):
             self.parent().create_project.emit({
                 'project_name': project_name, 'author_name': author_name, 'source_link': source_link,

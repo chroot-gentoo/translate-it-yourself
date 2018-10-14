@@ -7,6 +7,8 @@ import os
 from view.ui_views.mainWindow import Ui_MainWindow
 from view.ui_views.info_boxes import MessageBoxes
 from view.ui_views.create_project_dialog import CreateProjectDialogWindow
+from view.ui_views.open_project_dialog import OpenProjectDialogWindow
+from view.ui_views.delete_project_dialog import DeleteProjectDialogWindow
 
 from view.translate_api import translate
 
@@ -18,12 +20,15 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         Ui_MainWindow - форма для setupUi"""
     _current_block = None
     _project_changed = False  # при нажатии на save или auto-save меняется на False
+    _set_of_changed_blocks = set()
 
     open_cur_project = QtCore.pyqtSignal(str)
     load_from_file = QtCore.pyqtSignal(str)
-    set_text_blocks = QtCore.pyqtSignal(tuple)
+    set_text_blocks = QtCore.pyqtSignal(dict)
     dump_to_file = QtCore.pyqtSignal(list, str)
     create_project = QtCore.pyqtSignal(dict)
+    delete_project = QtCore.pyqtSignal(str)
+    get_projects_names = QtCore.pyqtSignal(str)  # передаем параметром действие - создание или удаление проекта
 
     def __init__(self, paren=None):
         QtWidgets.QMainWindow.__init__(self, paren)
@@ -34,7 +39,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.autosave_timer = QtCore.QTimer(self)
         self.autosave_timer.setTimerType(QtCore.Qt.VeryCoarseTimer)
         self.autosave_timer.start(AUTO_SAVE_TIMEOUT)
-        self.autosave_timer.timeout.connect(self._save_project)
+        self.autosave_timer.timeout.connect(self.auto_save)
 
         self.originalListWidget.itemClicked.connect(self.original_list_click)
         self.translatedListWidget.itemClicked.connect(self.translated_list_click)
@@ -47,11 +52,13 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.translateApiPushButton.clicked.connect(self.translate_word)
 
         self.createTrigger.triggered.connect(self.create_new_project)
-        self.openTrigger.triggered.connect(self.open_project)
+        self.openTrigger.triggered.connect(self.open_project_triggered)
+        self.deleteTrigger.triggered.connect(self.delete_project_triggered)
         self.exportTxtTrigger.triggered.connect(self.export_txt)
         self.exitToolButton.clicked.connect(self.close)
-        self.saveToolButton.clicked.connect(self._save_project)
-        self.saveTrigger.triggered.connect(self._save_project)
+        self.saveToolButton.clicked.connect(self.auto_save)
+        self.saveTrigger.triggered.connect(self.auto_save)
+        self.exitTrigger.triggered.connect(self.close)
 
     def sync_translated_scroll(self, value):
         self.translatedListWidget.verticalScrollBar().setValue(value)
@@ -75,8 +82,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.translatedPartStackedWidget.setCurrentWidget(self.listPage)
         self.workWithBlockPushButton.setEnabled(True)
         self._project_changed = True
+        self._set_of_changed_blocks.add(self._current_block)
 
-    # TODO: изменить когда будет метод выгрузки из базы
     def add_text(self, list_of_tuples):
         for o, t in list_of_tuples:
             orig_item = QtWidgets.QListWidgetItem(o, self.originalListWidget)
@@ -131,13 +138,29 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         """ Запуск диалогового окна создания нового проекта,
         при нажатии на "Создать" генерируется сигнял new_project с информацией из полей.
         """
-        create_project_dialog = CreateProjectDialogWindow(self)
-        create_project_dialog.show()
+        if self.close_current_project():
+            create_project_dialog = CreateProjectDialogWindow(self)
+            create_project_dialog.show()
 
-    # TODO: выгрузка из базы списка проектов, + поиск по проектам... список/аккардеон/дерево?
+    # TODO: полагаю имя проекта передавать надо не сюда, оно предается сингалом
     @QtCore.pyqtSlot()
-    def open_project(self, project_name='Hello'):
-        self.open_cur_project.emit(project_name)
+    def open_project_triggered(self):
+        if self.close_current_project():
+            self.get_projects_names.emit('open')
+
+    def open_projects(self, projects):
+        print(projects)
+        open_project_dialog = OpenProjectDialogWindow(self)
+        open_project_dialog.add_projects_list(projects)
+        open_project_dialog.show()
+
+    def delete_project_triggered(self):
+        self.get_projects_names.emit('delete')
+
+    def delete_projects(self, projects):
+        delete_project_dialog = DeleteProjectDialogWindow(self)
+        delete_project_dialog.add_projects_list(projects)
+        delete_project_dialog.show()
 
     def resizeEvent(self, event):
         """ Переопределение метода изменения размера окна,
@@ -146,32 +169,65 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.align_text_blocks_height()
 
     def closeEvent(self, event):
+        if self.close_current_project():
+            event.accept()
+        else:
+            event.ignore()
+
+    def close_current_project(self):
         if self._project_changed:
-            # диалоговое окно ... подумать где создавать экземпляр
-            answ = self.info_box('question', 'Выход', 'Сохранить изменения?')
+            answ = self.info_box('question', 'Закрытие проекта', 'Сохранить изменения?')
             if answ == QtWidgets.QMessageBox.Cancel:
-                event.ignore()
+                return False
 
             elif answ == QtWidgets.QMessageBox.Yes:
-                self._save_project()
-                event.accept()
+                self.save_project()
+                self.clear_project()
+                return True
 
             elif answ == QtWidgets.QMessageBox.No:
-                event.accept()
-        else:
-            event.accept()
+                self.clear_project()
+                return True
+        self.clear_project()
+        return True
+
+    def clear_project(self):
+        self.originalListWidget.clear()
+        self.translatedListWidget.clear()
 
     def showEvent(self, event):
         self.align_text_blocks_height()
         event.accept()
 
-    def _save_project(self):
-        text = ((self.originalListWidget.item(i).text(), self.translatedListWidget.item(i).text())
-                for i in range(self.translatedListWidget.count()))
+    def auto_save(self):
+        if self._project_changed:
+            self.save_project()
 
-        self.set_text_blocks.emit(tuple(text))
-        self._project_changed = False
+    def save_project(self):
+        changes_dict = {}
+        if self._set_of_changed_blocks:
+            for i in self._set_of_changed_blocks:
+                changes_dict[i] = (self.originalListWidget.item(i).text(), self.translatedListWidget.item(i).text())
+            self.set_text_blocks.emit(changes_dict)
+            self._project_changed = False
+            self._set_of_changed_blocks.clear()
 
+        elif not self._project_changed:
+            for i in range(self.translatedListWidget.count()):
+                changes_dict[i] = (self.originalListWidget.item(i).text(), self.translatedListWidget.item(i).text())
+            self.set_text_blocks.emit(changes_dict)
+            self._project_changed = False
+
+import sys
+sys._excepthook = sys.excepthook
+def my_exception_hook(exctype, value, traceback):
+    # Print the error and traceback
+    print(exctype, value, traceback)
+    # Call the normal Exception hook after
+    sys._excepthook(exctype, value, traceback)
+    sys.exit(1)
+# Set the exception hook to our wrapping function
+sys.excepthook = my_exception_hook
 
 if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)
