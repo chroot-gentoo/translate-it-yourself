@@ -65,7 +65,7 @@ class CDataBase:
             else:
                 self.cursor.execute('insert into book_en ( prj_id,  block_id,  en_text) '
                                     'values (:prj_id, :block_id, :en_text);', (prj_id, block_id, en_text))
-            self.conn.commit()
+            # self.conn.commit()
         except Exception as e:
             print(e)
             self.conn.rollback()
@@ -80,7 +80,7 @@ class CDataBase:
             else:
                 self.cursor.execute('insert into book_ru (prj_id, block_id, ru_text) '
                                     'values (:prj_id, :block_id, :ru_text);', (prj_id, block_id, ru_text))
-            self.conn.commit()
+            # self.conn.commit()
         except Exception as e:
             print(e)
             self.conn.rollback()
@@ -120,6 +120,9 @@ class CDataBase:
                 return None
         except Exception as e:
             print(e)
+
+    def make_commit(self):
+        self.conn.commit()
 
     def update_data_ru(self, ru_text, prj_id, blk_id):
         try:

@@ -20,10 +20,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         Ui_MainWindow - форма для setupUi"""
     _current_block = None
     _project_changed = False  # при нажатии на save или auto-save меняется на False
+    _set_of_changed_blocks = set()
 
     open_cur_project = QtCore.pyqtSignal(str)
     load_from_file = QtCore.pyqtSignal(str)
-    set_text_blocks = QtCore.pyqtSignal(tuple)
+    set_text_blocks = QtCore.pyqtSignal(dict)
     dump_to_file = QtCore.pyqtSignal(list, str)
     create_project = QtCore.pyqtSignal(dict)
     delete_project = QtCore.pyqtSignal(str)
@@ -38,7 +39,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.autosave_timer = QtCore.QTimer(self)
         self.autosave_timer.setTimerType(QtCore.Qt.VeryCoarseTimer)
         self.autosave_timer.start(AUTO_SAVE_TIMEOUT)
-        self.autosave_timer.timeout.connect(self._save_project)
+        self.autosave_timer.timeout.connect(self.auto_save)
 
         self.originalListWidget.itemClicked.connect(self.original_list_click)
         self.translatedListWidget.itemClicked.connect(self.translated_list_click)
@@ -55,8 +56,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.deleteTrigger.triggered.connect(self.delete_project_triggered)
         self.exportTxtTrigger.triggered.connect(self.export_txt)
         self.exitToolButton.clicked.connect(self.close)
-        self.saveToolButton.clicked.connect(self._save_project)
-        self.saveTrigger.triggered.connect(self._save_project)
+        self.saveToolButton.clicked.connect(self.auto_save)
+        self.saveTrigger.triggered.connect(self.auto_save)
         self.exitTrigger.triggered.connect(self.close)
 
     def sync_translated_scroll(self, value):
@@ -81,6 +82,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.translatedPartStackedWidget.setCurrentWidget(self.listPage)
         self.workWithBlockPushButton.setEnabled(True)
         self._project_changed = True
+        self._set_of_changed_blocks.add(self._current_block)
 
     def add_text(self, list_of_tuples):
         for o, t in list_of_tuples:
@@ -179,7 +181,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 return False
 
             elif answ == QtWidgets.QMessageBox.Yes:
-                self._save_project()
+                self.save_project()
                 self.clear_project()
                 return True
 
@@ -197,13 +199,35 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.align_text_blocks_height()
         event.accept()
 
-    def _save_project(self):
-        text = ((self.originalListWidget.item(i).text(), self.translatedListWidget.item(i).text())
-                for i in range(self.translatedListWidget.count()))
+    def auto_save(self):
+        if self._project_changed:
+            self.save_project()
 
-        self.set_text_blocks.emit(tuple(text))
-        self._project_changed = False
+    def save_project(self):
+        changes_dict = {}
+        if self._set_of_changed_blocks:
+            for i in self._set_of_changed_blocks:
+                changes_dict[i] = (self.originalListWidget.item(i).text(), self.translatedListWidget.item(i).text())
+            self.set_text_blocks.emit(changes_dict)
+            self._project_changed = False
+            self._set_of_changed_blocks.clear()
 
+        elif not self._project_changed:
+            for i in range(self.translatedListWidget.count()):
+                changes_dict[i] = (self.originalListWidget.item(i).text(), self.translatedListWidget.item(i).text())
+            self.set_text_blocks.emit(changes_dict)
+            self._project_changed = False
+
+import sys
+sys._excepthook = sys.excepthook
+def my_exception_hook(exctype, value, traceback):
+    # Print the error and traceback
+    print(exctype, value, traceback)
+    # Call the normal Exception hook after
+    sys._excepthook(exctype, value, traceback)
+    sys.exit(1)
+# Set the exception hook to our wrapping function
+sys.excepthook = my_exception_hook
 
 if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)
