@@ -48,6 +48,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.translatedListWidget.verticalScrollBar().valueChanged.connect(self.sync_original_scroll)
 
         self.workWithBlockPushButton.clicked.connect(self.work_with_block)
+        self.originalListWidget.itemDoubleClicked.connect(lambda: self.work_with_block(on_d_click=True))
+        self.translatedListWidget.itemDoubleClicked.connect(self.work_with_block)
+
         self.saveBlockPushButton.clicked.connect(self.save_block)
         self.translateApiPushButton.clicked.connect(self.translate_word)
 
@@ -67,8 +70,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.originalListWidget.verticalScrollBar().setValue(value)
 
     # TODO: добавить сохранение при смене блока без нажатия кнопки "сохранить"/либо сделать кнопку перевести неактивной
-    def work_with_block(self):
+    def work_with_block(self, on_d_click=False):
         """ Начать работу над переводом выделенного блока текста, срабатывает при нажатии кнопки 'перевести блок'. """
+        if on_d_click and self._current_block:
+            self.save_block()
         self._current_block = self.translatedListWidget.currentRow()
         self.translatedPartStackedWidget.setCurrentWidget(self.editorPage)
         self.originalTextEdit.setPlainText(self.originalListWidget.currentItem().text())
