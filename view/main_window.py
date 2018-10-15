@@ -88,6 +88,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.workWithBlockPushButton.setEnabled(True)
         self._project_changed = True
         self._set_of_changed_blocks.add(self._current_block)
+        self._current_block = None
 
     def add_text(self, list_of_tuples):
         for o, t in list_of_tuples:
