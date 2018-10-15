@@ -165,7 +165,7 @@ class Ui_MainWindow(object):
         MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
         self.saveToolButton.setText(_translate("MainWindow", "..."))
         self.exitToolButton.setText(_translate("MainWindow", "..."))
-        self.saveBlockPushButton.setText(_translate("MainWindow", "Сохранить блок"))
+        self.saveBlockPushButton.setText(_translate("MainWindow", "Принять перевод"))
         self.translateApiPushButton.setText(_translate("MainWindow", "online перевод"))
         self.workWithBlockPushButton.setText(_translate("MainWindow", "Перевести блок"))
         self.menu.setTitle(_translate("MainWindow", "Меню"))
