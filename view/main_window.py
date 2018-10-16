@@ -194,6 +194,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             elif answ == QtWidgets.QMessageBox.No:
                 self.clear_project()
                 return True
+            return False
         self.clear_project()
         return True
 
