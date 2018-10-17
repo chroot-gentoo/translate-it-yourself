@@ -74,7 +74,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         """ Начать работу над переводом выделенного блока текста, срабатывает при нажатии кнопки 'перевести блок'. """
         if on_d_click and self._current_block:
             self.save_block()
-        self._current_block = self.translatedListWidget.currentRow()
+        self._current_block = self.originalListWidget.currentRow()
         self.translatedPartStackedWidget.setCurrentWidget(self.editorPage)
         self.originalTextEdit.setPlainText(self.originalListWidget.currentItem().text())
         self.translatedTextEdit.setPlainText(self.translatedListWidget.currentItem().text())

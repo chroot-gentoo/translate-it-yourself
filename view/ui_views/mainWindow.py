@@ -162,7 +162,7 @@ class Ui_MainWindow(object):
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
-        MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
+        MainWindow.setWindowTitle(_translate("MainWindow", "translate it yourself"))
         self.saveToolButton.setText(_translate("MainWindow", "..."))
         self.exitToolButton.setText(_translate("MainWindow", "..."))
         self.saveBlockPushButton.setText(_translate("MainWindow", "Принять перевод"))
