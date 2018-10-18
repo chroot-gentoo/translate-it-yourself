@@ -63,6 +63,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.saveTrigger.triggered.connect(self.auto_save)
         self.exitTrigger.triggered.connect(self.close)
 
+        self.trayIcon.show()
+
     def sync_translated_scroll(self, value):
         self.translatedListWidget.verticalScrollBar().setValue(value)
 
@@ -72,9 +74,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     # TODO: добавить сохранение при смене блока без нажатия кнопки "сохранить"/либо сделать кнопку перевести неактивной
     def work_with_block(self, on_d_click=False):
         """ Начать работу над переводом выделенного блока текста, срабатывает при нажатии кнопки 'перевести блок'. """
-        if on_d_click and self._current_block:
+        if on_d_click and (self._current_block or self._current_block == 0):
             self.save_block()
-        self._current_block = self.translatedListWidget.currentRow()
+        self._current_block = self.originalListWidget.currentRow()
         self.translatedPartStackedWidget.setCurrentWidget(self.editorPage)
         self.originalTextEdit.setPlainText(self.originalListWidget.currentItem().text())
         self.translatedTextEdit.setPlainText(self.translatedListWidget.currentItem().text())
@@ -102,8 +104,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def align_text_blocks_height(self):
         """ Выравнивает высоту блоков текста по тексту оригинала, срабатывает при изменении размера окна"""
         for string_index in range(self.translatedListWidget.count()):
-            orig_index = self.originalListWidget.model().index(string_index)
-            orig_height = self.originalListWidget.visualRect(orig_index).height()
+            index_ = self.originalListWidget.model().index(string_index)
+            orig_height = self.originalListWidget.visualRect(index_).height()
+
             self.translatedListWidget.item(string_index).setSizeHint(QtCore.QSize(-1, orig_height))
 
     @QtCore.pyqtSlot()
@@ -116,15 +119,19 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.originalListWidget.setCurrentRow(self.translatedListWidget.currentRow())
 
     def translate_word(self):
-        _PATTERN = 'оригинал: {} \n перевод: {}'
-        text = self.originalTextEdit.createMimeDataFromSelection().text()
-        if text:
-            type_, desc_, text_ = translate(text)
-            if type_ == 'info':
-                self.info_box(type_, desc_, _PATTERN.format(text, text_))
+        _PATTERN = '<b>оригинал:</b> {} <br><br> <b>перевод:</b> {}'
+        selection = self.originalTextEdit.createMimeDataFromSelection().text()
+
+        type_, desc_, text_ = translate(selection) if selection else translate(self.originalTextEdit.toPlainText())
+        if type_ == 'info':
+            if selection:
+                self.info_box(type_, desc_, _PATTERN.format(selection, text_))
                 QtWidgets.QApplication.clipboard().setText(text_)
             else:
-                self.info_box(type_, desc_, text_)
+                self.translatedTextEdit.setPlainText(text_)
+
+        else:
+            self.info_box(type_, desc_, text_)
 
     def export_txt(self):
         """
@@ -145,6 +152,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         при нажатии на "Создать" генерируется сигнял new_project с информацией из полей.
         """
         if self.close_current_project():
+            self.translatedPartStackedWidget.setCurrentWidget(self.listPage)
+            self.translatedTextEdit.clear()
+            self._current_block = None
             create_project_dialog = CreateProjectDialogWindow(self)
             create_project_dialog.show()
 
@@ -152,6 +162,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     @QtCore.pyqtSlot()
     def open_project_triggered(self):
         if self.close_current_project():
+            self.translatedPartStackedWidget.setCurrentWidget(self.listPage)
+            self.translatedTextEdit.clear()
+            self._current_block = None
             self.get_projects_names.emit('open')
 
     def open_projects(self, projects):
@@ -175,7 +188,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.align_text_blocks_height()
 
     def closeEvent(self, event):
+
         if self.close_current_project():
+            self.trayIcon.hide()
             event.accept()
         else:
             event.ignore()
@@ -225,14 +240,20 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.set_text_blocks.emit(changes_dict)
             self._project_changed = False
 
+
 import sys
+
 sys._excepthook = sys.excepthook
+
+
 def my_exception_hook(exctype, value, traceback):
     # Print the error and traceback
     print(exctype, value, traceback)
     # Call the normal Exception hook after
     sys._excepthook(exctype, value, traceback)
     sys.exit(1)
+
+
 # Set the exception hook to our wrapping function
 sys.excepthook = my_exception_hook
 
