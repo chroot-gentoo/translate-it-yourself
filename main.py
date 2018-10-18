@@ -1,6 +1,6 @@
 import sys
 
-from PyQt5 import QtWidgets
+from PyQt5 import QtWidgets, QtGui
 from presenter.presenter import Presenter
 from view.main_window import MainWindow
 from model.model import Repository

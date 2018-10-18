@@ -1,4 +1,5 @@
 from presenter.parsertxt import ParserText
+from PyQt5.QtGui import QIcon
 
 
 # TODO: в большой степени методы носят тестовый характер. Изменим при реализации базы
@@ -29,6 +30,8 @@ class Presenter(object):
         if self._model.get_project_id(dict_['project_name']):
             self._view.save_project()
 
+        self._view.trayIcon.showMessage('TIY', 'Проект успешно создан')
+
     def get_blocks(self, data: tuple):
         self._view.add_text(data)
 
@@ -53,3 +56,4 @@ class Presenter(object):
 
     def del_project(self, project_name):
         self._model.del_project(project_name)
+        self._view.trayIcon.showMessage('TIY', 'Проект успеншо удален', msecs=300)

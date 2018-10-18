@@ -7,12 +7,19 @@ from os.path import join, abspath
 ICONS_PATH = abspath("./view/ui_views/icons")
 SAVE_ICON = "save_ico.png"
 EXIT_ICON = "exit_ico.png"
+APP_ICON = "app_ico.png"
 
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(873, 759)
+        app_ico = QtGui.QIcon(join(ICONS_PATH, APP_ICON))
+        self.setWindowIcon(app_ico)
+
+        self.trayIcon = QtWidgets.QSystemTrayIcon()
+        self.trayIcon.setIcon(app_ico)
+
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.gridLayout_4 = QtWidgets.QGridLayout(self.centralwidget)
